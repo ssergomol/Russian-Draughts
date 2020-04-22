@@ -36,8 +36,8 @@ def draw_board(screen: Surface, pos_x: int, pos_y: int, elem_size: int, board: B
 
 def game_loop(screen: Surface, board: BoardState, ai: AI):
     grid_size = screen.get_size()[0] // 8
-
     while True:
+        draw_board(screen, 0, 0, grid_size, board)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
@@ -48,32 +48,38 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
                 new_x, new_y = [p // grid_size for p in event.pos]
                 old_x, old_y = [p // grid_size for p in mouse_click_position]
 
+                if old_x == new_x and old_y == new_y:
+                    moves = board.get_possible_moves(old_x, old_y)
+                    color = (102, 255, 0)
+                    for cell in moves:
+                        position = cell[1] * grid_size, cell[0] * grid_size, grid_size, grid_size
+                        pygame.draw.rect(screen, color, position, 2)
+                possible_move = False
+                if (new_y, new_x) in board.get_possible_moves(old_x, old_y):
+                    possible_move = True
                 new_board = board.do_move(old_x, old_y, new_x, new_y)
-                if new_board is not None:
+                if new_board is not None and possible_move:
                     board = new_board
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                 x, y = [p // grid_size for p in event.pos]
                 board.board[y, x] = (board.board[y, x] + 1 + 2) % 5 - 2  # change figure
-
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     board = board.inverted()
-
                 if event.key == pygame.K_SPACE:
                     new_board = ai.next_move(board)
                     if new_board is not None:
                         board = new_board
-
-        draw_board(screen, 0, 0, grid_size, board)
-        pygame.display.flip()
+            pygame.display.flip()
 
 
 pygame.init()
 
 screen: Surface = pygame.display.set_mode([512, 512])
-ai = AI(PositionEvaluation(), search_depth=4)
 
+ai = AI(PositionEvaluation(), search_depth=4)
+pygame.display.update()
 game_loop(screen, BoardState.initial_state(), ai)
 
 pygame.quit()
