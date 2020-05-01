@@ -2,6 +2,15 @@ import numpy as np
 from typing import Optional, List
 
 
+def sign(item):
+    if item > 0:
+        return 1
+    elif item < 0:
+        return -1
+    else:
+        return 0
+
+
 class BoardState:
     def __init__(self, board: np.ndarray, current_player: int = 1):
         self.board: np.ndarray = board
@@ -29,14 +38,29 @@ class BoardState:
         dis_x = to_x - from_x
         dis_y = to_y - from_y
         result = self.copy()
-        if abs(dis_x) == 2:
-            ate = True
-            new_y = int(from_y + (dis_y / 2))
-            new_x = int(from_x + (dis_x / 2))
-            result.board[new_y, new_x] = 0
-
-        result.board[to_y, to_x] = result.board[from_y, from_x]
-        result.board[from_y, from_x] = 0
+        if abs(self.board[from_y, from_x]) == 1:
+            if abs(dis_x) == 2:
+                ate = True
+                new_y = int(from_y + (dis_y / 2))
+                new_x = int(from_x + (dis_x / 2))
+                result.board[new_y, new_x] = 0
+            result.board[to_y, to_x] = result.board[from_y, from_x]
+            result.board[from_y, from_x] = 0
+        if abs(self.board[from_y, from_x]) == 2:
+            x_ = from_x
+            y_ = from_y
+            for i in range(abs(dis_x)):
+                x_ += int(abs(dis_x) / dis_x)
+                y_ += int(abs(dis_y) / dis_y)
+                if abs(self.board[y_, x_]) != 0:
+                    result.board[y_, x_] = 0
+                    ate = True
+            result.board[to_y, to_x] = result.board[from_y, from_x]
+            result.board[from_y, from_x] = 0
+        if self.current_player == 1 and to_y == 0:
+            result.board[to_y, to_x] = 2
+        elif self.current_player == -1 and to_y == 7:
+            result.board[to_y, to_x] = -2
 
         if not ate:
             result.current_player *= -1
@@ -45,12 +69,15 @@ class BoardState:
     def get_possible_moves(self, pos_x, pos_y):
         possible_moves = []
 
-        if (self.current_player > 0) != (self.board[pos_y, pos_x] > 0):
+        if sign(self.current_player) != sign(self.board[pos_y, pos_x]):
             return possible_moves
         if abs(self.board[pos_y, pos_x]) == 2:
             i = pos_y
             j = pos_x
             for k in range(4):
+                ate_flag = 0
+                i = pos_y
+                j = pos_x
                 first = 1
                 second = 1
                 if k == 1:
@@ -61,12 +88,19 @@ class BoardState:
                     first = -1
                     second = -1
                 while 0 <= i <= 7 and 0 <= j <= 7:
-                    if self.board[i, j] != 0 and (self.board[i, j] < abs(self.board[i, j])) == (self.current_player < abs(self.current_player)):
-                        break
                     i += first
                     j += second
-                    if (self.board[i, j] > 0) == (self.current_player < 0):
+                    if i > 7 or j > 7 or i < 0 or j < 0:
+                        break
+                    if sign(self.board[i, j]) == sign(self.current_player):
+                        break
+                    if sign(self.board[i, j]) \
+                            != sign(self.current_player) and sign(self.board[i, j]) != 0:
+                        ate_flag += 1
+                        continue
+                    if ate_flag <= 1:
                         possible_moves.append((i, j))
+
         else:
             if pos_y % 2 != pos_x % 2:
                 fl = self.board[pos_y, pos_x]
