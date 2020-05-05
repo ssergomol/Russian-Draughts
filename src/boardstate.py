@@ -66,60 +66,61 @@ class BoardState:
             result.current_player *= -1
         return result
 
+    def queen_possible_moves(self, pos_x, pos_y):
+        possible_moves = []
+        if sign(self.current_player) != sign(self.board[pos_y, pos_x]):
+            return possible_moves
+        for k in range(4):
+            ate_flag = 0
+            i = pos_y
+            j = pos_x
+            first = 1
+            second = 1
+            if k == 1:
+                first = -1
+            elif k == 2:
+                second = -1
+            elif k == 3:
+                first = -1
+                second = -1
+            while 0 <= i <= 7 and 0 <= j <= 7:
+                i += first
+                j += second
+                if i > 7 or j > 7 or i < 0 or j < 0:
+                    break
+                if sign(self.board[i, j]) == sign(self.current_player):
+                    break
+                if sign(self.board[i, j]) \
+                        != sign(self.current_player) and sign(self.board[i, j]) != 0:
+                    ate_flag += 1
+                    continue
+                if ate_flag <= 1:
+                    possible_moves.append((i, j))
+        return possible_moves
+
     def get_possible_moves(self, pos_x, pos_y):
         possible_moves = []
 
         if sign(self.current_player) != sign(self.board[pos_y, pos_x]):
             return possible_moves
-        if abs(self.board[pos_y, pos_x]) == 2:
-            i = pos_y
-            j = pos_x
-            for k in range(4):
-                ate_flag = 0
-                i = pos_y
-                j = pos_x
-                first = 1
-                second = 1
-                if k == 1:
-                    first = -1
-                elif k == 2:
-                    second = -1
-                elif k == 3:
-                    first = -1
-                    second = -1
-                while 0 <= i <= 7 and 0 <= j <= 7:
-                    i += first
-                    j += second
-                    if i > 7 or j > 7 or i < 0 or j < 0:
-                        break
-                    if sign(self.board[i, j]) == sign(self.current_player):
-                        break
-                    if sign(self.board[i, j]) \
-                            != sign(self.current_player) and sign(self.board[i, j]) != 0:
-                        ate_flag += 1
+        if pos_y % 2 != pos_x % 2:
+            fl = self.board[pos_y, pos_x]
+            for i in range(pos_y - 1, pos_y + 2):
+                for j in range(pos_x - 1, pos_x + 2):
+                    if i > 7 or i < 0 or j > 7 or j < 0:
                         continue
-                    if ate_flag <= 1:
+                    if self.board[i, j] == fl or self.board[i, j] == 2 * fl:
+                        continue
+                    if (i % 2) != (j % 2) and self.board[i, j] == 0:
                         possible_moves.append((i, j))
-
-        else:
-            if pos_y % 2 != pos_x % 2:
-                fl = self.board[pos_y, pos_x]
-                for i in range(pos_y - 1, pos_y + 2):
-                    for j in range(pos_x - 1, pos_x + 2):
-                        if i > 7 or i < 0 or j > 7 or j < 0:
-                            continue
-                        if self.board[i, j] == fl or self.board[i, j] == 2 * fl:
-                            continue
-                        if (i % 2) != (j % 2) and self.board[i, j] == 0:
-                            possible_moves.append((i, j))
-                        if self.board[i, j] == -fl or self.board[i, j] == -2 * fl:
-                            differ_i = i - pos_y
-                            differ_j = j - pos_x
-                            new_i = i + differ_i
-                            new_j = j + differ_j
-                            if 7 >= new_i >= 0 and 7 >= new_j >= 0:
-                                if self.board[new_i, new_j] == 0:
-                                    possible_moves.append((new_i, new_j))
+                    if self.board[i, j] == -fl or self.board[i, j] == -2 * fl:
+                        differ_i = i - pos_y
+                        differ_j = j - pos_x
+                        new_i = i + differ_i
+                        new_j = j + differ_j
+                        if 7 >= new_i >= 0 and 7 >= new_j >= 0:
+                            if self.board[new_i, new_j] == 0:
+                                possible_moves.append((new_i, new_j))
 
         return possible_moves
 

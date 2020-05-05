@@ -2,9 +2,12 @@ from itertools import product
 
 import pygame
 from pygame import Surface
+import random
 
-from src.ai import AI, PositionEvaluation
+from datetime import datetime
+from src.ai import AI
 from src.boardstate import BoardState
+import pickle
 
 
 def draw_board(screen: Surface, pos_x: int, pos_y: int, elem_size: int, board: BoardState):
@@ -39,23 +42,30 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
     while True:
         draw_board(screen, 0, 0, grid_size, board)
         for event in pygame.event.get():
+            player_made_move = False
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_click_position = event.pos
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+
                 new_x, new_y = [p // grid_size for p in event.pos]
                 old_x, old_y = [p // grid_size for p in mouse_click_position]
-
+                moves = []
                 if old_x == new_x and old_y == new_y:
-                    moves = board.get_possible_moves(old_x, old_y)
+                    if abs(board.board[old_y, old_x]) != 2:
+                        moves = board.get_possible_moves(old_x, old_y)
+                    else:
+                        moves = board.queen_possible_moves(old_x, old_y)
                     color = (102, 255, 0)
                     for cell in moves:
                         position = cell[1] * grid_size, cell[0] * grid_size, grid_size, grid_size
                         pygame.draw.rect(screen, color, position, 2)
                 possible_move = False
-                if (new_y, new_x) in board.get_possible_moves(old_x, old_y):
+                if abs(board.board[old_y, old_x]) == 1 and (new_y, new_x) in board.get_possible_moves(old_x, old_y):
+                    possible_move = True
+                if abs(board.board[old_y, old_x]) == 2 and (new_y, new_x) in board.queen_possible_moves(old_x, old_y):
                     possible_move = True
                 new_board = board.do_move(old_x, old_y, new_x, new_y)
                 if new_board is not None and possible_move:
@@ -68,9 +78,20 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
                 if event.key == pygame.K_r:
                     board = board.inverted()
                 if event.key == pygame.K_SPACE:
-                    new_board = ai.next_move(board)
-                    if new_board is not None:
-                        board = new_board
+                    if board.current_player == -1:
+                        while board.current_player == -1:
+                            ai.pos_eval_func(board, ai.depth)
+                            new_board = board.do_move(ai.from_x, ai.from_y, ai.to_x, ai.to_y)
+                            if new_board is not None:
+                                board = new_board
+
+                if event.key == pygame.K_s:
+                    with open("save", "wb") as b:
+                        pickle.dump(board, b)
+                if event.key == pygame.K_l:
+                    with open("save", "rb") as b:
+                        board = pickle.load(b)
+
             pygame.display.flip()
 
 
@@ -78,7 +99,7 @@ pygame.init()
 
 screen: Surface = pygame.display.set_mode([512, 512])
 
-ai = AI(PositionEvaluation(), search_depth=4)
+ai = AI(search_depth=4)
 pygame.display.update()
 game_loop(screen, BoardState.initial_state(), ai)
 
