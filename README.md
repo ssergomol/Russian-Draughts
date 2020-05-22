@@ -1,2 +1,2 @@
-# PythonReview1
-Russian draughts
+# Russian draughts
+Молчанов Сергей Б05-912
