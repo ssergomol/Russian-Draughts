@@ -1,0 +1,4 @@
+# Default ignored files
+/workspace.xml
+*.cpython-38.pyc
+__pycache__

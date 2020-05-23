@@ -42,7 +42,6 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
     while True:
         draw_board(screen, 0, 0, grid_size, board)
         for event in pygame.event.get():
-            player_made_move = False
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -52,21 +51,8 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
 
                 new_x, new_y = [p // grid_size for p in event.pos]
                 old_x, old_y = [p // grid_size for p in mouse_click_position]
-                moves = []
-                if old_x == new_x and old_y == new_y:
-                    if abs(board.board[old_y, old_x]) != 2:
-                        moves = board.get_possible_moves(old_x, old_y)
-                    else:
-                        moves = board.queen_possible_moves(old_x, old_y)
-                    color = (102, 255, 0)
-                    for cell in moves:
-                        position = cell[1] * grid_size, cell[0] * grid_size, grid_size, grid_size
-                        pygame.draw.rect(screen, color, position, 2)
-                possible_move = False
-                if abs(board.board[old_y, old_x]) == 1 and (new_y, new_x) in board.get_possible_moves(old_x, old_y):
-                    possible_move = True
-                if abs(board.board[old_y, old_x]) == 2 and (new_y, new_x) in board.queen_possible_moves(old_x, old_y):
-                    possible_move = True
+                possible_move = True
+                board.cell_highlighting(old_x, old_y, new_x, new_y, grid_size, screen, possible_move)
                 new_board = board.do_move(old_x, old_y, new_x, new_y)
                 if new_board is not None and possible_move:
                     board = new_board

@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional, List
+import pygame
 
 
 def sign(item):
@@ -123,6 +124,23 @@ class BoardState:
                                 possible_moves.append((new_i, new_j))
 
         return possible_moves
+
+    def cell_highlighting(self, old_x, old_y, new_x, new_y, grid_size, screen, possible_move):
+        moves = []
+        if old_x == new_x and old_y == new_y:
+            if abs(self.board[old_y, old_x]) != 2:
+                moves = self.get_possible_moves(old_x, old_y)
+            else:
+                moves = self.queen_possible_moves(old_x, old_y)
+            color = (102, 255, 0)
+            for cell in moves:
+                position = cell[1] * grid_size, cell[0] * grid_size, grid_size, grid_size
+                pygame.draw.rect(screen, color, position, 2)
+            possible_move = False
+            if abs(self.board[old_y, old_x]) == 1 and (new_y, new_x) in self.get_possible_moves(old_x, old_y):
+                possible_move = True
+            if abs(self.board[old_y, old_x]) == 2 and (new_y, new_x) in self.queen_possible_moves(old_x, old_y):
+                possible_move = True
 
     @property
     def is_game_finished(self) -> bool:

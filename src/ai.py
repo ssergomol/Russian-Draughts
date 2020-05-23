@@ -46,12 +46,11 @@ def player_evaluation(board: BoardState):
     return evaluation
 
 
-min_move = 0
-best_move = 0
-flag = False
-
-
 class AI:
+    min_move = 0
+    best_move = 0
+    flag = False
+
     def __init__(self, search_depth: int):
         self.depth: int = search_depth
         self.from_x = 7
@@ -71,9 +70,6 @@ class AI:
         self.to_x = second[1]
 
     def pos_eval_func(self, board: BoardState, depth):
-        global min_move
-        global flag
-        global best_move
         all_possible_pawns = []
         if depth == 0:
             return total_evaluation(board)
@@ -97,26 +93,25 @@ class AI:
                         temp_board = temp_board.do_move(j, i, move[1], move[0])
                         current_evaluation = total_evaluation(temp_board)
                         best_evaluation = self.pos_eval_func(temp_board, depth - 1)
-                        best_move = min(current_evaluation, best_evaluation)
-                        if not flag:
+                        self.best_move = min(current_evaluation, best_evaluation)
+                        if not self.flag:
                             if current_evaluation < 0:
                                 self.from_y = i
                                 self.from_x = j
                                 self.to_y = move[0]
                                 self.to_x = move[1]
-                                min_move = current_evaluation
-                                flag = True
+                                self.min_move = current_evaluation
+                                self.flag = True
                             else:
                                 self.random_func(all_possible_pawns, board)
-                                flag = True
+                                self.flag = True
                         if depth == self.depth:
-                            if current_evaluation < min_move:
+                            if current_evaluation < self.min_move:
                                 self.from_y = i
                                 self.from_x = j
                                 self.to_y = move[0]
                                 self.to_x = move[1]
-                                min_move = current_evaluation
+                                self.min_move = current_evaluation
                             else:
                                 self.random_func(all_possible_pawns, board)
-        return best_move
-
+        return self.best_move
