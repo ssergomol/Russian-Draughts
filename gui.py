@@ -85,7 +85,7 @@ pygame.init()
 
 screen: Surface = pygame.display.set_mode([512, 512])
 
-ai = AI(search_depth=4)
+ai = AI(search_depth=3)
 pygame.display.update()
 game_loop(screen, BoardState.initial_state(), ai)
 
