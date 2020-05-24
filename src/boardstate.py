@@ -113,7 +113,12 @@ class BoardState:
                     if self.board[i, j] == fl or self.board[i, j] == 2 * fl:
                         continue
                     if (i % 2) != (j % 2) and self.board[i, j] == 0:
-                        possible_moves.append((i, j))
+                        if sign(self.current_player) >= 0:
+                            if i - pos_y < 0:
+                                possible_moves.append((i, j))
+                        else:
+                            if i - pos_y > 0:
+                                possible_moves.append((i, j))
                     if self.board[i, j] == -fl or self.board[i, j] == -2 * fl:
                         differ_i = i - pos_y
                         differ_j = j - pos_x
@@ -121,7 +126,12 @@ class BoardState:
                         new_j = j + differ_j
                         if 7 >= new_i >= 0 and 7 >= new_j >= 0:
                             if self.board[new_i, new_j] == 0:
-                                possible_moves.append((new_i, new_j))
+                                if sign(self.current_player) >= 0:
+                                    if new_i - pos_y < 0:
+                                        possible_moves.append((new_i, new_j))
+                                else:
+                                    if new_i - pos_y > 0:
+                                        possible_moves.append((new_i, new_j))
 
         return possible_moves
 
