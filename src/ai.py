@@ -47,7 +47,6 @@ def player_evaluation(board: BoardState):
 
 
 class AI:
-    min_move = 0
     best_move = 0
     flag = False
 
@@ -59,17 +58,20 @@ class AI:
         self.to_y = 3
 
     def random_func(self, all_possible_pawns, board: BoardState):
-        index = random.randint(0, len(all_possible_pawns) - 1)
-        first = all_possible_pawns[index]
-        self.from_y = first[0]
-        self.from_x = first[1]
-        all_moves = board.get_possible_moves(self.from_x, self.from_y)
-        index_second = random.randint(0, len(all_moves) - 1)
-        second = all_moves[index_second]
-        self.to_y = second[0]
-        self.to_x = second[1]
+        if len(all_possible_pawns) == 0:
+            index = random.randint(0, len(all_possible_pawns) - 1)
+            first = all_possible_pawns[index]
+            self.from_y = first[0]
+            self.from_x = first[1]
 
-    def pos_eval_func(self, board: BoardState, depth):
+        all_moves = board.get_possible_moves(self.from_x, self.from_y)
+        if len(all_moves) != 0:
+            index_second = random.randint(0, len(all_moves) - 1)
+            second = all_moves[index_second]
+            self.to_y = second[0]
+            self.to_x = second[1]
+
+    def pos_eval_func(self, board: BoardState, depth, history):
         all_possible_pawns = []
         if depth == 0:
             return total_evaluation(board)
@@ -88,30 +90,36 @@ class AI:
                     if len(moves) == 0:
                         continue
                     all_possible_pawns.append((i, j))
+
                     for move in moves:
                         temp_board = board.copy()
+
                         temp_board = temp_board.do_move(j, i, move[1], move[0])
                         current_evaluation = total_evaluation(temp_board)
-                        best_evaluation = self.pos_eval_func(temp_board, depth - 1)
-                        self.best_move = min(current_evaluation, best_evaluation)
+
+                        best_evaluation = self.pos_eval_func(temp_board, depth - 1, history)
+
+                        history.append(best_evaluation)
+                        if min(current_evaluation, best_evaluation) < self.best_move:
+                            self.best_move = min(current_evaluation, best_evaluation)
                         if not self.flag:
                             if current_evaluation < 0:
                                 self.from_y = i
                                 self.from_x = j
                                 self.to_y = move[0]
                                 self.to_x = move[1]
-                                self.min_move = current_evaluation
+                                self.best_move = min(current_evaluation, best_evaluation)
                                 self.flag = True
                             else:
                                 self.random_func(all_possible_pawns, board)
+                                self.best_move = min(current_evaluation, best_evaluation)
                                 self.flag = True
                         if depth == self.depth:
-                            if current_evaluation < self.min_move:
+                            if current_evaluation < self.best_move:
                                 self.from_y = i
                                 self.from_x = j
                                 self.to_y = move[0]
                                 self.to_x = move[1]
-                                self.min_move = current_evaluation
                             else:
                                 self.random_func(all_possible_pawns, board)
         return self.best_move
