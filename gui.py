@@ -2,12 +2,13 @@ from itertools import product
 
 import pygame
 from pygame import Surface
-import random
-
-from datetime import datetime
 from src.ai import AI
 from src.boardstate import BoardState
 import pickle
+
+may_be_eaten_and_ate = False
+pos_x_eaten = 0
+pos_y_eaten = 0
 
 
 def draw_board(screen: Surface, pos_x: int, pos_y: int, elem_size: int, board: BoardState):
@@ -39,7 +40,9 @@ def draw_board(screen: Surface, pos_x: int, pos_y: int, elem_size: int, board: B
 
 def game_loop(screen: Surface, board: BoardState, ai: AI):
     grid_size = screen.get_size()[0] // 8
+
     while True:
+
         draw_board(screen, 0, 0, grid_size, board)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -48,14 +51,37 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
                 mouse_click_position = event.pos
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-
+                global may_be_eaten_and_ate, pos_y_eaten, pos_x_eaten
                 new_x, new_y = [p // grid_size for p in event.pos]
                 old_x, old_y = [p // grid_size for p in mouse_click_position]
-                possible_move = True
-                board.cell_highlighting(old_x, old_y, new_x, new_y, grid_size, screen, possible_move)
-                new_board = board.do_move(old_x, old_y, new_x, new_y)
-                if new_board is not None and possible_move:
-                    board = new_board
+                if may_be_eaten_and_ate and old_x == pos_x_eaten and old_y == pos_y_eaten and abs(new_x - old_x > 1):
+                    board.current_player *= -1
+                    possible_move = board.possible_move_val_for_eaten(old_y, old_x, new_y, new_x)
+                    new_board = board.do_move(old_x, old_y, new_x, new_y)
+                    if board.can_eat(new_x, new_y):
+                        may_be_eaten_and_ate = True
+                        pos_y_eaten = new_y
+                        pos_x_eaten = new_x
+                    else:
+                        may_be_eaten_and_ate = False
+                    if new_board is not None and possible_move:
+                        board = new_board
+                    board.current_player *= -1
+                if not may_be_eaten_and_ate:
+                    if old_x == new_x and old_y == new_y:
+                        board.cell_highlighting(old_x, old_y, new_x, new_y, grid_size, screen)
+                    else:
+                        possible_move = board.possible_move_val(old_y, old_x, new_y, new_x)
+                        new_board = board.do_move(old_x, old_y, new_x, new_y)
+                        if new_board is not None and possible_move:
+                            board = new_board
+                        if abs(new_x - old_x) > 1 and board.can_eat(new_x, new_y):
+                            may_be_eaten_and_ate = True
+                            pos_y_eaten = new_y
+                            pos_x_eaten = new_x
+                        else:
+                            may_be_eaten_and_ate = False
+                        board.current_player *= -1
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                 x, y = [p // grid_size for p in event.pos]
@@ -70,6 +96,9 @@ def game_loop(screen: Surface, board: BoardState, ai: AI):
                             new_board = board.do_move(ai.from_x, ai.from_y, ai.to_x, ai.to_y)
                             if new_board is not None:
                                 board = new_board
+                            if abs(ai.from_x - ai.to_x) > 1 and board.can_eat(ai.to_x, ai.to_y):
+                                board = board.ai_do_move_and_eat(ai.to_x, ai.to_y)
+                            board.current_player *= -1
 
                 if event.key == pygame.K_s:
                     with open("save", "wb") as b:

@@ -24,24 +24,18 @@ class BoardState:
         return BoardState(self.board.copy(), self.current_player)
 
     def do_move(self, from_x, from_y, to_x, to_y) -> Optional['BoardState']:
-        """
-        :return: new BoardState or None for invalid move
-        """
         if (self.current_player > 0) != (self.board[from_y, from_x] > 0):
             result = self.copy()
             return result
         if from_x == to_x and from_y == to_y:
             return None
-
         if (to_x + to_y) % 2 == 0:
             return None
-        ate = False
         dis_x = to_x - from_x
         dis_y = to_y - from_y
         result = self.copy()
         if abs(self.board[from_y, from_x]) == 1:
             if abs(dis_x) == 2:
-                ate = True
                 new_y = int(from_y + (dis_y / 2))
                 new_x = int(from_x + (dis_x / 2))
                 result.board[new_y, new_x] = 0
@@ -55,17 +49,22 @@ class BoardState:
                 y_ += int(abs(dis_y) / dis_y)
                 if abs(self.board[y_, x_]) != 0:
                     result.board[y_, x_] = 0
-                    ate = True
             result.board[to_y, to_x] = result.board[from_y, from_x]
             result.board[from_y, from_x] = 0
         if self.current_player == 1 and to_y == 0:
             result.board[to_y, to_x] = 2
         elif self.current_player == -1 and to_y == 7:
             result.board[to_y, to_x] = -2
-
-        if not ate:
-            result.current_player *= -1
         return result
+
+    def possible_move_val(self, from_y, from_x, to_y, to_x):
+        possible_move = False
+        if abs(self.board[from_y, from_x]) == 1 and (to_y, to_x) in self.get_possible_moves(from_x, from_y):
+            possible_move = True
+        if abs(self.board[from_y, from_x]) == 2 and (to_y, to_x) in self.queen_possible_moves(from_x, from_y):
+            possible_move = True
+
+        return possible_move
 
     def queen_possible_moves(self, pos_x, pos_y):
         possible_moves = []
@@ -101,7 +100,6 @@ class BoardState:
 
     def get_possible_moves(self, pos_x, pos_y):
         possible_moves = []
-
         if sign(self.current_player) != sign(self.board[pos_y, pos_x]):
             return possible_moves
         if pos_y % 2 != pos_x % 2:
@@ -119,6 +117,8 @@ class BoardState:
                         else:
                             if i - pos_y > 0:
                                 possible_moves.append((i, j))
+                        if abs(i - pos_y) > 1:
+                            possible_moves.append((i, j))
                     if self.board[i, j] == -fl or self.board[i, j] == -2 * fl:
                         differ_i = i - pos_y
                         differ_j = j - pos_x
@@ -132,10 +132,12 @@ class BoardState:
                                 else:
                                     if new_i - pos_y > 0:
                                         possible_moves.append((new_i, new_j))
+                                if abs(new_i - pos_y) > 1:
+                                    possible_moves.append((new_i, new_j))
 
         return possible_moves
 
-    def cell_highlighting(self, old_x, old_y, new_x, new_y, grid_size, screen, possible_move):
+    def cell_highlighting(self, old_x, old_y, new_x, new_y, grid_size, screen):
         moves = []
         if old_x == new_x and old_y == new_y:
             if abs(self.board[old_y, old_x]) != 2:
@@ -146,11 +148,57 @@ class BoardState:
             for cell in moves:
                 position = cell[1] * grid_size, cell[0] * grid_size, grid_size, grid_size
                 pygame.draw.rect(screen, color, position, 2)
-            possible_move = False
-            if abs(self.board[old_y, old_x]) == 1 and (new_y, new_x) in self.get_possible_moves(old_x, old_y):
-                possible_move = True
-            if abs(self.board[old_y, old_x]) == 2 and (new_y, new_x) in self.queen_possible_moves(old_x, old_y):
-                possible_move = True
+
+    def can_eat(self, new_x, new_y):
+        pos_ways = self.get_possible_moves_for_eaten(new_x, new_y)
+        for way in pos_ways:
+            if abs(way[0] - new_y) > 1:
+                return True
+        return False
+
+    def ai_do_move_and_eat(self, new_x, new_y):
+        pos_ways = self.get_possible_moves_for_eaten(new_x, new_y)
+        for way in pos_ways:
+            if abs(way[0] - new_y) > 1:
+                new_board = self.do_move(new_x, new_y, way[1], way[0])
+                if new_board is not None:
+                    return new_board
+                else:
+                    return self.copy()
+
+    def get_possible_moves_for_eaten(self, pos_x, pos_y):
+        possible_moves = []
+        if sign(self.current_player) != sign(self.board[pos_y, pos_x]):
+            return possible_moves
+        if pos_y % 2 != pos_x % 2:
+            fl = self.board[pos_y, pos_x]
+            for i in range(pos_y - 1, pos_y + 2):
+                for j in range(pos_x - 1, pos_x + 2):
+                    if i > 7 or i < 0 or j > 7 or j < 0:
+                        continue
+                    if self.board[i, j] == fl or self.board[i, j] == 2 * fl:
+                        continue
+                    if (i % 2) != (j % 2) and self.board[i, j] == 0:
+                        possible_moves.append((i, j))
+                    if self.board[i, j] == -fl or self.board[i, j] == -2 * fl:
+                        differ_i = i - pos_y
+                        differ_j = j - pos_x
+                        new_i = i + differ_i
+                        new_j = j + differ_j
+                        if 7 >= new_i >= 0 and 7 >= new_j >= 0:
+                            if self.board[new_i, new_j] == 0:
+                                possible_moves.append((new_i, new_j))
+
+        return possible_moves
+
+    def possible_move_val_for_eaten(self, from_y, from_x, to_y, to_x):
+        possible_move = False
+        if abs(self.board[from_y, from_x]) == 1 and (to_y, to_x) in self.get_possible_moves_for_eaten(from_x, from_y):
+            possible_move = True
+        if abs(self.board[from_y, from_x]) == 2 and (to_y, to_x) in self.queen_possible_moves(from_x, from_y):
+            possible_move = True
+
+        return possible_move
 
     @property
     def is_game_finished(self) -> bool:
@@ -170,3 +218,26 @@ class BoardState:
                 if ((7 - i) % 2) != (j % 2):
                     board[7 - i, j] = 1
         return BoardState(board, 1)
+
+
+def ai_evaluation(board: BoardState):
+    evaluation = 0
+    for i in range(8):
+        for j in range(8):
+            if abs(board.board[i, j]) == 2:
+                evaluation += abs(board.board[i, j] * 5)
+            else:
+                evaluation += abs(board.board[i, j])
+    return evaluation
+
+
+def player_evaluation(board: BoardState):
+    evaluation = 0
+    for i in range(8):
+        for j in range(8):
+            if board.board[i, j] > 0:
+                if abs(board.board[i, j]) == 2:
+                    evaluation += board.board[i, j] * 5
+                else:
+                    evaluation += board.board[i, j]
+    return evaluation
