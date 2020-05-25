@@ -1,4 +1,3 @@
-from typing import Optional
 import random
 from .boardstate import BoardState
 
@@ -36,15 +35,17 @@ class AI:
         self.to_y = 3
 
     def random_func(self, all_possible_pawns, board: BoardState):
-        index = random.randint(0, len(all_possible_pawns) - 1)
-        first = all_possible_pawns[index]
-        self.from_y = first[0]
-        self.from_x = first[1]
-        all_moves = board.get_possible_moves(self.from_x, self.from_y)
-        index_second = random.randint(0, len(all_moves) - 1)
-        second = all_moves[index_second]
-        self.to_y = second[0]
-        self.to_x = second[1]
+        if all_possible_pawns != 0:
+            index = random.randint(0, len(all_possible_pawns) - 1)
+            first = all_possible_pawns[index]
+            self.from_y = first[0]
+            self.from_x = first[1]
+            all_moves = board.get_possible_moves(self.from_x, self.from_y)
+            if len(all_moves) != 0:
+                index_second = random.randint(0, len(all_moves) - 1)
+                second = all_moves[index_second]
+                self.to_y = second[0]
+                self.to_x = second[1]
 
     def pos_eval_func(self, board: BoardState, depth):
         all_possible_pawns = []

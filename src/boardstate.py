@@ -138,7 +138,6 @@ class BoardState:
         return possible_moves
 
     def cell_highlighting(self, old_x, old_y, new_x, new_y, grid_size, screen):
-        moves = []
         if old_x == new_x and old_y == new_y:
             if abs(self.board[old_y, old_x]) != 2:
                 moves = self.get_possible_moves(old_x, old_y)
